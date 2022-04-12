@@ -1,48 +1,62 @@
-// 响应式数据的基本实现
-const bucket = new WeakMap()
-
-const data = {text: 'hello world'}
+// 完善的响应系统
+let activeEffect
+const bucket = new Set()
+const data = { text: 'hello world' }
 const obj = new Proxy(data, {
   get(target, key) {
-    console.log(target, key)
-    if (!activeEffect) return
-    let depsMap = bucket.get(target)
-    if (!depsMap) {
-      bucket.set(target, (depsMap = new Map()))
+    if (activeEffect) {
+      bucket.add(activeEffect)
     }
-    let deps = depsMap.get(key)
-    if (!deps) {
-      depsMap.set(key, (deps = new Set()))
-    }
-    deps.add(activeEffect)
-    console.log(bucket, depsMap, deps)
     return target[key]
   },
-  set (target, key, newVal) {
-    target[key] = newVal
-    console.log(target[key], target)
-    const depsMap = bucket.get(target)
-    console.log(depsMap, key)
-    if (!depsMap) return
-    console.log(depsMap, key)
-    const effects = depsMap.get(key)
-    effects && effects.forEach(fn => fn())
-    // console.log(target, key, newVal)
+  set (target, key, value) {
+    console.log('go')
+    target[key] = value
+    bucket.forEach(fn => fn())
+    return true
   }
 })
-
-let activeEffect
-
 function effect(fn) {
   activeEffect = fn
   fn()
 }
-
 effect(() => {
+  console.log('123')
   document.body.innerText = obj.text
 })
-
 setTimeout(() => {
-  obj.text = 'hello world 123'
-  obj.notExist = 'xx'
+  document.body.innerText = 'hello world 123'
+  obj.otherText = '123'
 }, 1000);
+
+// 响应式数据的基本实现
+// // 储存副作用函数桶 
+// const bucket = new Set()
+
+// // 原始数据
+// const data = { text: 'hello world' }
+
+// // 对原始数据的代理
+// const obj = new Proxy(data, {
+//   get(target, key) {
+//     console.log(target, key)
+//     bucket.add(effect)
+//     return target[key]
+//   },
+//   set(target, key, value) {
+//     console.log(target, key, value, bucket)
+//     target[key] = value
+//     bucket.forEach(fn => fn())
+//     return true
+//   }
+// })
+
+// // 副作用函数
+// function effect () {
+//   document.body.innerText = obj.text
+// }
+// effect()
+// setTimeout(() => {
+//   obj.text = 'hello world 123'
+// }, 1000);
+
